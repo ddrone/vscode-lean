@@ -104,21 +104,17 @@ export class AbbreviationRewriter {
 		const replacements = new Array<{
 			range: Range;
 			newText: string;
-			transformOffsetInRange: (offset: number) => number;
+			cursorOffset: number;
 		}>();
 		for (const abbr of abbreviations) {
 			const symbol = abbr.matchingSymbol;
 			if (symbol) {
 				const newText = symbol.replace(cursorVar, '');
-				let cursorOffset = symbol.indexOf(cursorVar);
-				if (cursorOffset === -1) {
-					// position the cursor after the inserted symbol
-					cursorOffset = newText.length;
-				}
+				const cursorOffset = symbol.indexOf(cursorVar);
 				replacements.push({
 					range: abbr.range,
 					newText,
-					transformOffsetInRange: (offset) => cursorOffset,
+					cursorOffset
 				});
 			}
 		}
@@ -147,8 +143,9 @@ export class AbbreviationRewriter {
 						// do this on ` \abbr| ` or ` \ab|br `
 						// newSel and r.range intersect
 						const offset = newSel.offset - r.range.offset;
-						const newOffset = r.transformOffsetInRange(offset);
-						newSel = newSel.move(newOffset - offset);
+						if (r.cursorOffset !== -1) {
+							newSel = newSel.move(r.cursorOffset - offset);
+						}
 					}
 				}
 				return newSel;
